@@ -9,9 +9,14 @@ const router = express.Router();
 
 // --- Local Auth ---
 router.post('/signup', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, confirmPassword } = req.body; // Add confirmPassword
   if (!email || !password || password.length < 6) {
     return res.status(400).json({ message: 'Please provide a valid email and a password of at least 6 characters.' });
+  }
+
+  // --- New Validation Step ---
+  if (password !== confirmPassword) {
+    return res.status(400).json({ message: 'Passwords do not match' });
   }
 
   try {

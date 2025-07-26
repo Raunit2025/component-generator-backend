@@ -57,9 +57,34 @@ router.get('/', async (req, res) => {
   }
 });
 
+// --- NEW: Rename a session ---
+router.put('/:id/rename', async (req, res) => {
+  const { name } = req.body;
+  const { id } = req.params;
+
+  if (!name || !name.trim()) {
+    return res.status(400).json({ message: 'Name cannot be empty' });
+  }
+
+  try {
+    const session = await Session.findOne({ _id: id, user: req.user._id });
+    if (!session) {
+      return res.status(404).json({ message: 'Session not found' });
+    }
+
+    session.name = name;
+    const updatedSession = await session.save();
+    res.json(updatedSession);
+  } catch (error) {
+    console.error('Error renaming session:', error);
+    res.status(500).json({ message: 'Server error renaming session' });
+  }
+});
+
+
 // Generate code for a session
 router.post('/:id/generate', async (req, res) => {
-  const { prompt, targetElement } = req.body; // <-- Destructure targetElement
+  const { prompt, targetElement } = req.body;
   const { id } = req.params;
 
   if (!prompt || !prompt.trim()) {
@@ -81,7 +106,7 @@ router.post('/:id/generate', async (req, res) => {
       prompt,
       existingJsxBody,
       session.cssCode,
-      targetElement // <-- Pass targetElement to the service
+      targetElement
     );
 
     session.jsxCode = jsxCode;
@@ -96,7 +121,7 @@ router.post('/:id/generate', async (req, res) => {
   }
 });
 
-// Add route to delete a session
+// Delete a session
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
