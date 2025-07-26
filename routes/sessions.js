@@ -74,11 +74,14 @@ router.post('/:id/generate', async (req, res) => {
 
     session.chatHistory.push({ role: 'user', content: prompt });
     
-    const { jsxCode, cssCode } = await generateComponentCode(prompt);
+    const jsxBodyMatch = session.jsxCode.match(/return \(([\s\S]*?)\);/);
+    const existingJsxBody = jsxBodyMatch ? jsxBodyMatch[1].trim() : '';
+
+    const { jsxCode, cssCode } = await generateComponentCode(prompt, existingJsxBody, session.cssCode);
 
     session.jsxCode = jsxCode;
     session.cssCode = cssCode;
-    session.chatHistory.push({ role: 'assistant', content: "Sure, I've generated the code for your request." });
+    session.chatHistory.push({ role: 'assistant', content: "Sure, I've updated the code for you." });
     
     const updatedSession = await session.save();
     res.json(updatedSession);
@@ -87,5 +90,23 @@ router.post('/:id/generate', async (req, res) => {
     res.status(500).json({ message: 'Server error generating code' });
   }
 });
+
+// FIX: Add route to delete a session
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const session = await Session.findOneAndDelete({ _id: id, user: req.user._id });
+
+        if (!session) {
+            return res.status(404).json({ message: 'Session not found or you do not have permission to delete it.' });
+        }
+
+        res.status(200).json({ message: 'Session deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error deleting session' });
+    }
+});
+
 
 module.exports = router;
