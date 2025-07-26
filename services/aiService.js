@@ -48,38 +48,65 @@ const formatCode = async (code, parser) => {
     }
 };
 
-const generateComponentCode = async (prompt, existingJsx = '', existingCss = '') => {
+const generateComponentCode = async (prompt, existingJsx = '', existingCss = '', targetElement = null) => {
     const systemPrompt = `
-      You are an expert React and Tailwind CSS code editor. Your job is to modify existing code based on a user's request.
+      You are an expert React code editor. Your job is to modify existing code based on a user's request.
       You MUST return a single, valid JSON object with two keys: "jsxCode" and "cssCode". Do not wrap your response in markdown backticks.
 
-      **CSS Generation Strategy:**
-      1.  **If the user's prompt explicitly asks for "CSS" OR describes a complex, multi-element component like a "page", "form", "layout", "card", "blog", or "dashboard":** You MUST generate traditional CSS. To do this, convert all Tailwind utility classes into standard CSS rules in the "cssCode" field. Then, replace the utility classes in the "jsxCode" with simple, semantic class names.
-          - **Example:** For a styled button, the output should be:
-              - jsxCode: '<button class="custom-button">Click Me</button>'
-              - cssCode: '.custom-button { background-color: #3b82f6; color: #ffffff; padding: 0.5rem 1rem; border-radius: 0.25rem; }'
+      **CRITICAL CSS STRATEGY:**
+      Your primary goal is to separate styles from structure.
+      - IF the user asks for a component that is more than a single element (e.g., a 'form', 'card', 'page', 'dashboard'), you MUST convert all styling (including Tailwind classes) into traditional CSS in the "cssCode" field.
+      - The "jsxCode" should then ONLY contain simple, semantic class names using the "className" attribute.
+      - EXAMPLE for a login form:
+        - jsxCode: '<div className="login-container"><form>...</form></div>'
+        - cssCode: '.login-container { display: flex; align-items: center; ... }'
+      - ONLY for extremely simple, single-element requests (e.g., "a single red button") MAY you use Tailwind classes directly in the JSX. For all other multi-element components, you MUST separate the CSS.
 
-      2.  **For simple, single-element components (like just "a button" or "an input") where the user does NOT ask for CSS:** You MAY use Tailwind classes directly in the JSX and leave "cssCode" empty.
+      **Editing Modes:**
+      1.  **General Edit:** If no "targetElement" is provided, modify the entire component.
+      2.  **Targeted Edit:** If a "targetElement" is provided, apply changes ONLY to that specific element, which is identified by its \`data-id\` attribute.
 
       **General Rules:**
-      - "jsxCode" should ONLY contain the JSX elements for the component's body (no function wrapper, imports, or return statement).
-      - The JSX must be a single root element or fragment (<>...</>).
+      - "jsxCode" must be ONLY the JSX for the component's body.
+      - The JSX must have a single root element or fragment (<>...</>).
+      - PRESERVE existing \`data-id\` attributes.
     `;
 
-    const fullPrompt = `
-      Here is the current code:
-      JSX/TSX:
-      \`\`\`jsx
-      ${existingJsx}
-      \`\`\`
+    let fullPrompt;
+    if (targetElement && targetElement.elementId) {
+        fullPrompt = `
+          The user has selected a specific element to modify.
+          Target Element: <${targetElement.tagName.toLowerCase()}> with the attribute data-id="${targetElement.elementId}".
 
-      CSS:
-      \`\`\`css
-      ${existingCss}
-      \`\`\`
+          Here is the current code:
+          JSX/TSX:
+          \`\`\`jsx
+          ${existingJsx}
+          \`\`\`
 
-      Please apply the following change: "${prompt}"
-    `;
+          CSS:
+          \`\`\`css
+          ${existingCss}
+          \`\`\`
+
+          Please apply the following change ONLY to the targeted element: "${prompt}"
+        `;
+    } else {
+        fullPrompt = `
+          Here is the current code:
+          JSX/TSX:
+          \`\`\`jsx
+          ${existingJsx}
+          \`\`\`
+
+          CSS:
+          \`\`\`css
+          ${existingCss}
+          \`\`\`
+
+          Please apply the following change: "${prompt}"
+        `;
+    }
 
     const payload = {
       contents: [
@@ -123,7 +150,7 @@ const generateComponentCode = async (prompt, existingJsx = '', existingCss = '')
       }
 
       let jsxSnippet = parsedContent.jsxCode.trim();
-      const returnMatch = jsxSnippet.match(/^return\s*\(([\s\S]*)\);?$/);
+      const returnMatch = jsxSnippet.match(/^return\s*\(([\s\S]*?)\);?$/);
       if (returnMatch) {
         jsxSnippet = returnMatch[1];
       }

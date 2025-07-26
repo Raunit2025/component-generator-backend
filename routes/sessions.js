@@ -59,7 +59,7 @@ router.get('/', async (req, res) => {
 
 // Generate code for a session
 router.post('/:id/generate', async (req, res) => {
-  const { prompt } = req.body;
+  const { prompt, targetElement } = req.body; // <-- Destructure targetElement
   const { id } = req.params;
 
   if (!prompt || !prompt.trim()) {
@@ -77,7 +77,12 @@ router.post('/:id/generate', async (req, res) => {
     const jsxBodyMatch = session.jsxCode.match(/return \(([\s\S]*?)\);/);
     const existingJsxBody = jsxBodyMatch ? jsxBodyMatch[1].trim() : '';
 
-    const { jsxCode, cssCode } = await generateComponentCode(prompt, existingJsxBody, session.cssCode);
+    const { jsxCode, cssCode } = await generateComponentCode(
+      prompt,
+      existingJsxBody,
+      session.cssCode,
+      targetElement // <-- Pass targetElement to the service
+    );
 
     session.jsxCode = jsxCode;
     session.cssCode = cssCode;
@@ -91,7 +96,7 @@ router.post('/:id/generate', async (req, res) => {
   }
 });
 
-// FIX: Add route to delete a session
+// Add route to delete a session
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
