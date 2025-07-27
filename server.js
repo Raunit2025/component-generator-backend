@@ -16,12 +16,27 @@ const app = express();
 // Body parser
 app.use(express.json());
 
-// Enable CORS
+// --- UPDATE CORS OPTIONS HERE ---
+const allowedOrigins = [
+  'http://localhost:3000', // For local development
+  'https://your-vercel-url.vercel.app' // <-- IMPORTANT: REPLACE with your actual Vercel URL
+];
+
 app.use(cors({
-  origin: 'http://localhost:3000', // Your frontend URL
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
 }));
+// --- END OF CORS UPDATE ---
+
 
 // Passport middleware
 app.use(passport.initialize());
