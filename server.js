@@ -19,7 +19,7 @@ app.use(express.json());
 // --- UPDATE CORS OPTIONS HERE ---
 const allowedOrigins = [
   'http://localhost:3000', // For local development
-  'https://your-vercel-url.vercel.app' // <-- IMPORTANT: REPLACE with your actual Vercel URL
+  'https://component-generator-frontend-xzms.vercel.app/' // <-- IMPORTANT: REPLACE with your actual Vercel URL
 ];
 
 app.use(cors({
