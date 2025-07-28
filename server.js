@@ -4,39 +4,44 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const passport = require('passport');
 const connectDB = require('./config/db');
+const redisClient = require('./config/redis'); // This might be null
 
 // Load env vars
 dotenv.config();
 
-// Connect to database
+// Connect to MongoDB
 connectDB();
+
+// Listen for Redis connection events only if the client was initialized
+if (redisClient) {
+  redisClient.on('connect', () => {
+    console.log('Connected to Redis...');
+  });
+}
 
 const app = express();
 
 // Body parser
 app.use(express.json());
 
-// --- UPDATE CORS OPTIONS HERE ---
+// CORS configuration
 const allowedOrigins = [
   'http://localhost:3000', // For local development
-  'https://component-generator-frontend-xzms.vercel.app' // <-- IMPORTANT: REPLACE with your actual Vercel URL
+  'https://component-generator-frontend-xzms.vercel.app' // Your Vercel URL
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+      callback(new Error(msg), false);
     }
-    return callback(null, true);
   },
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
 }));
-// --- END OF CORS UPDATE ---
-
 
 // Passport middleware
 app.use(passport.initialize());
@@ -48,6 +53,7 @@ require('./config/passport')(passport);
 app.use('/auth', require('./routes/auth'));
 app.use('/sessions', require('./routes/sessions'));
 
+// Health check route
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
