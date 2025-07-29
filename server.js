@@ -16,25 +16,25 @@ const app = express();
 // Body parser
 app.use(express.json());
 
-// --- TEMPORARY DEBUGGING STEP: Open CORS to all origins ---
-app.use(cors({
-  origin: '*', // Allow any origin
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true,
-}));
-
-/*
-// --- ORIGINAL CORS CONFIGURATION ---
+// --- SECURE CORS CONFIGURATION WITH LOGGING ---
 const allowedOrigins = [
-  'http://localhost:3000',
-  'https://component-generator-frontend-xzms.vercel.app' 
+  'http://localhost:3000', // For local development
+  'https://component-generator-frontend.vercel.app/' // Your known Vercel URL
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    // Log the incoming origin for debugging purposes
+    console.log('Incoming request from origin:', origin);
+
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      // If the origin is in our whitelist, allow it
       callback(null, true);
     } else {
+      // If the origin is not whitelisted, reject it
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       callback(new Error(msg), false);
     }
@@ -42,7 +42,7 @@ app.use(cors({
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
 }));
-*/
+
 
 // Passport middleware
 app.use(passport.initialize());
