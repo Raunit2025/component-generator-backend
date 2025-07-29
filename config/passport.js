@@ -6,8 +6,8 @@ const GithubStrategy = require('passport-github2').Strategy;
 const User = require('../models/User');
 
 // --- DYNAMIC URLS ---
-// Use environment variables for URLs, with fallbacks for local development.
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+// REMOVED the fallback to localhost. This now relies solely on the environment variable.
+const BACKEND_URL = process.env.BACKEND_URL;
 
 const opts = {};
 opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
