@@ -1,3 +1,4 @@
+// routes/auth.js
 const express = require('express');
 const passport = require('passport');
 const bcrypt = require('bcrypt');
@@ -7,14 +8,17 @@ const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+// --- DYNAMIC URLS ---
+// Use environment variables for the frontend URL, with a fallback.
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
 // --- Local Auth ---
 router.post('/signup', async (req, res) => {
-  const { email, password, confirmPassword } = req.body; // Add confirmPassword
+  const { email, password, confirmPassword } = req.body;
   if (!email || !password || password.length < 6) {
     return res.status(400).json({ message: 'Please provide a valid email and a password of at least 6 characters.' });
   }
 
-  // --- New Validation Step ---
   if (password !== confirmPassword) {
     return res.status(400).json({ message: 'Passwords do not match' });
   }
@@ -98,10 +102,11 @@ const handleOAuthCallback = async (req, res) => {
         }
         const payload = { sub: user._id, email: user.email };
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.redirect(`http://localhost:3000/auth/callback?token=${token}`);
+        // Redirect to the dynamic frontend URL
+        res.redirect(`${FRONTEND_URL}/auth/callback?token=${token}`);
     } catch (error) {
         console.error('OAuth Error:', error);
-        res.redirect('http://localhost:3000/auth/login?error=oauth_failed');
+        res.redirect(`${FRONTEND_URL}/auth/login?error=oauth_failed`);
     }
 };
 

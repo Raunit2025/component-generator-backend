@@ -5,6 +5,10 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const GithubStrategy = require('passport-github2').Strategy;
 const User = require('../models/User');
 
+// --- DYNAMIC URLS ---
+// Use environment variables for URLs, with fallbacks for local development.
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+
 const opts = {};
 opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
 opts.secretOrKey = process.env.JWT_SECRET;
@@ -27,7 +31,8 @@ module.exports = (passport) => {
   passport.use('google', new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: 'http://localhost:3001/auth/google/callback',
+      // Use the dynamic backend URL for the callback
+      callbackURL: `${BACKEND_URL}/auth/google/callback`,
       scope: ['email', 'profile'],
     },
     (accessToken, refreshToken, profile, done) => {
@@ -46,7 +51,8 @@ module.exports = (passport) => {
   passport.use('github', new GithubStrategy({
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: 'http://localhost:3001/auth/github/callback',
+      // Use the dynamic backend URL for the callback
+      callbackURL: `${BACKEND_URL}/auth/github/callback`,
       scope: ['user:email'],
     },
     (accessToken, refreshToken, profile, done) => {
