@@ -4,7 +4,6 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const passport = require('passport');
 const connectDB = require('./config/db');
-// const redisClient = require('./config/redis'); // REMOVED
 
 // Load env vars
 dotenv.config();
@@ -17,24 +16,27 @@ const app = express();
 // Body parser
 app.use(express.json());
 
-// CORS configuration
+// --- FIX: Add your frontend's deployment URL here ---
 const allowedOrigins = [
   'http://localhost:3000', // For local development
   'https://component-generator-frontend-xzms.vercel.app' // Your Vercel URL
+  // Add any other frontend URLs if you have them (e.g., preview domains)
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      callback(new Error(msg), false);
+      return callback(new Error(msg), false);
     }
+    return callback(null, true);
   },
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
 }));
+
 
 // Passport middleware
 app.use(passport.initialize());
