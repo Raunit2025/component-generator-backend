@@ -4,20 +4,13 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const passport = require('passport');
 const connectDB = require('./config/db');
-const redisClient = require('./config/redis'); // This might be null
+// const redisClient = require('./config/redis'); // REMOVED
 
 // Load env vars
 dotenv.config();
 
 // Connect to MongoDB
 connectDB();
-
-// Listen for Redis connection events only if the client was initialized
-if (redisClient) {
-  redisClient.on('connect', () => {
-    console.log('Connected to Redis...');
-  });
-}
 
 const app = express();
 
