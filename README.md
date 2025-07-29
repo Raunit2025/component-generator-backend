@@ -80,7 +80,7 @@ npm start
 The server will be running at: http://localhost:3001
 
 ### 📁 Project Structure
-
+```bash
 .
 ├── config/
 │   ├── db.js               # MongoDB connection logic
@@ -99,7 +99,7 @@ The server will be running at: http://localhost:3001
 ├── .gitignore              # Git ignore file
 ├── package.json            # Project dependencies
 └── server.js               # Main application entry point
-
+```
 ### 📝 API Endpoints
 ### 🔐 Auth Routes (/auth)
 
