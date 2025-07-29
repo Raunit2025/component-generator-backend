@@ -19,7 +19,7 @@ app.use(express.json());
 // --- SECURE CORS CONFIGURATION WITH LOGGING ---
 const allowedOrigins = [
   'http://localhost:3000', // For local development
-  'https://component-generator-frontend.vercel.app/' // Your known Vercel URL
+  'https://component-generator-frontend.vercel.app' // Your known Vercel URL
 ];
 
 app.use(cors({
