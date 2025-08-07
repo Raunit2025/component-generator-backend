@@ -22,7 +22,6 @@ const UserSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Compound index for OAuth users
 UserSchema.index({ provider: 1, providerId: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('User', UserSchema);
