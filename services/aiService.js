@@ -122,60 +122,67 @@ const generateComponentCode = async (prompt, existingJsx = '', existingCss = '',
       }
     };
 
-    try {
-      const response = await axios.post(API_URL, payload, {
-        headers: { 'Content-Type': 'application/json' },
-      });
+    let lastError = null;
+    for (let i = 0; i < 3; i++) {
+        try {
+            const response = await axios.post(API_URL, payload, {
+                headers: { 'Content-Type': 'application/json' },
+            });
 
-      if (!response.data.candidates || !response.data.candidates[0].content.parts[0].text) {
-        logError(new Error("Invalid response structure from Gemini API"), response.data);
-        throw new Error('AI returned an invalid response structure.');
-      }
+            if (!response.data.candidates || !response.data.candidates[0].content.parts[0].text) {
+                logError(new Error("Invalid response structure from Gemini API"), response.data);
+                throw new Error('AI returned an invalid response structure.');
+            }
 
-      const content = response.data.candidates[0].content.parts[0].text;
-      let parsedContent = JSON.parse(content);
-      
-      if (typeof parsedContent.jsxCode === 'object' && parsedContent.jsxCode !== null) {
-          if (Array.isArray(parsedContent.jsxCode)) {
-              parsedContent.jsxCode = parsedContent.jsxCode.map(convertJsxObjectToString).join('');
-          } else {
-              parsedContent.jsxCode = convertJsxObjectToString(parsedContent.jsxCode);
-          }
-      }
+            const content = response.data.candidates[0].content.parts[0].text;
+            let parsedContent = JSON.parse(content);
 
-      if (typeof parsedContent.jsxCode !== 'string') {
-        logError(new Error(`AI response did not contain a valid jsxCode string`), parsedContent);
-        parsedContent.jsxCode = `<div style={{color: 'orange', padding: '1rem', border: '1px solid orange', borderRadius: '8px', fontFamily: 'sans-serif'}}>Sorry, the AI returned an invalid response. Please try rephrasing your prompt.</div>`;
-        parsedContent.cssCode = '';
-      }
+            if (typeof parsedContent.jsxCode === 'object' && parsedContent.jsxCode !== null) {
+                if (Array.isArray(parsedContent.jsxCode)) {
+                    parsedContent.jsxCode = parsedContent.jsxCode.map(convertJsxObjectToString).join('');
+                } else {
+                    parsedContent.jsxCode = convertJsxObjectToString(parsedContent.jsxCode);
+                }
+            }
 
-      let jsxSnippet = parsedContent.jsxCode.trim();
-      const returnMatch = jsxSnippet.match(/^return\s*\(([\s\S]*?)\);?$/);
-      if (returnMatch) {
-        jsxSnippet = returnMatch[1];
-      }
-      
-      jsxSnippet = jsxSnippet.trim();
+            if (typeof parsedContent.jsxCode !== 'string') {
+                logError(new Error(`AI response did not contain a valid jsxCode string`), parsedContent);
+                parsedContent.jsxCode = `<div style={{color: 'orange', padding: '1rem', border: '1px solid orange', borderRadius: '8px', fontFamily: 'sans-serif'}}>Sorry, the AI returned an invalid response. Please try rephrasing your prompt.</div>`;
+                parsedContent.cssCode = '';
+            }
+
+            let jsxSnippet = parsedContent.jsxCode.trim();
+            const returnMatch = jsxSnippet.match(/^return\s*\(([\s\S]*?)\);?$/);
+            if (returnMatch) {
+                jsxSnippet = returnMatch[1];
+            }
+
+            jsxSnippet = jsxSnippet.trim();
 
 
-      if (!jsxSnippet || !jsxSnippet.startsWith('<')) {
-        logError(new Error(`AI returned invalid JSX: "${jsxSnippet}"`));
-        jsxSnippet = `<div style={{color: 'orange', padding: '1rem', border: '1px solid orange', borderRadius: '8px', fontFamily: 'sans-serif'}}>Sorry, the AI returned invalid code. Please try rephrasing your prompt.</div>`;
-      }
+            if (!jsxSnippet || !jsxSnippet.startsWith('<')) {
+                logError(new Error(`AI returned invalid JSX: "${jsxSnippet}"`));
+                jsxSnippet = `<div style={{color: 'orange', padding: '1rem', border: '1px solid orange', borderRadius: '8px', fontFamily: 'sans-serif'}}>Sorry, the AI returned invalid code. Please try rephrasing your prompt.</div>`;
+            }
 
-      const componentWrapper = `const GeneratedComponent = () => {\n  return (\n    ${jsxSnippet}\n  );\n};`;
+            const componentWrapper = `const GeneratedComponent = () => {\n  return (\n    ${jsxSnippet}\n  );\n};`;
 
-      const formattedJsx = await formatCode(componentWrapper, 'babel');
-      const formattedCss = await formatCode(parsedContent.cssCode || '', 'css');
+            const formattedJsx = await formatCode(componentWrapper, 'babel');
+            const formattedCss = await formatCode(parsedContent.cssCode || '', 'css');
 
-      return {
-        jsxCode: formattedJsx,
-        cssCode: formattedCss,
-      };
-    } catch (error) {
-      logError(error);
-      throw new Error('Failed to generate component code from AI.');
+            return {
+                jsxCode: formattedJsx,
+                cssCode: formattedCss,
+            };
+        } catch (error) {
+            lastError = error;
+            console.error(`Attempt ${i + 1} failed. Retrying in ${Math.pow(2, i)} seconds...`);
+            await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
+        }
     }
+
+    logError(lastError);
+    throw new Error('Failed to generate component code from AI after multiple retries.');
 }
 
 module.exports = { generateComponentCode };

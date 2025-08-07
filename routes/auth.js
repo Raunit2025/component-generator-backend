@@ -1,27 +1,54 @@
-// routes/auth.js
 const express = require('express');
 const passport = require('passport');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// --- DYNAMIC URLS ---
-// Use environment variables for the frontend URL, with a fallback.
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-// --- Local Auth ---
-router.post('/signup', async (req, res) => {
-  const { email, password, confirmPassword } = req.body;
-  if (!email || !password || password.length < 6) {
-    return res.status(400).json({ message: 'Please provide a valid email and a password of at least 6 characters.' });
-  }
+// Validation rules for signup
+const signupValidationRules = [
+  body('email').isEmail().withMessage('Please provide a valid email.'),
+  body('password')
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters long.')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
+    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.'),
+  body('confirmPassword').custom((value, { req }) => {
+    if (value !== req.body.password) {
+      throw new Error('Passwords do not match.');
+    }
+    return true;
+  }),
+];
 
-  if (password !== confirmPassword) {
-    return res.status(400).json({ message: 'Passwords do not match' });
+// Validation rules for login
+const loginValidationRules = [
+  body('email').isEmail().withMessage('Please provide a valid email.'),
+  body('password').notEmpty().withMessage('Password is required.'),
+];
+
+
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (errors.isEmpty()) {
+    return next();
   }
+  const extractedErrors = [];
+  errors.array().map(err => extractedErrors.push({ [err.param]: err.msg }));
+
+  return res.status(422).json({
+    errors: extractedErrors,
+  });
+};
+
+
+router.post('/signup', signupValidationRules, validate, async (req, res) => {
+  const { email, password } = req.body;
 
   try {
     const existingUser = await User.findOne({ email });
@@ -49,7 +76,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginValidationRules, validate, async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ email });
@@ -84,8 +111,6 @@ router.get('/profile', protect, (req, res) => {
     });
 });
 
-
-// --- OAuth Logic ---
 const handleOAuthCallback = async (req, res) => {
     const { provider, providerId, email } = req.user;
     try {
@@ -102,7 +127,6 @@ const handleOAuthCallback = async (req, res) => {
         }
         const payload = { sub: user._id, email: user.email };
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-        // Redirect to the dynamic frontend URL
         res.redirect(`${FRONTEND_URL}/auth/callback?token=${token}`);
     } catch (error) {
         console.error('OAuth Error:', error);
@@ -110,13 +134,10 @@ const handleOAuthCallback = async (req, res) => {
     }
 };
 
-// --- Google OAuth Routes ---
 router.get('/google', passport.authenticate('google'));
 router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: '/auth/login' }), handleOAuthCallback);
 
-// --- GitHub OAuth Routes ---
 router.get('/github', passport.authenticate('github'));
 router.get('/github/callback', passport.authenticate('github', { session: false, failureRedirect: '/auth/login' }), handleOAuthCallback);
-
 
 module.exports = router;
