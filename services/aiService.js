@@ -3,7 +3,7 @@ const axios = require('axios');
 const prettier = require('prettier');
 
 const API_KEY = process.env.GEMINI_API_KEY;
-const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
 console.log("API KEY LENGTH:", process.env.GEMINI_API_KEY?.length);
 
