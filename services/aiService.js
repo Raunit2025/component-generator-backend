@@ -118,9 +118,6 @@ const generateComponentCode = async (prompt, existingJsx = '', existingCss = '',
           ]
         }
       ],
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
     };
 
     let lastError = null;
