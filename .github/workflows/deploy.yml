@@ -1,0 +1,31 @@
+name: Deploy UI Forge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Update Frontend
+        run: |
+          cd /srv/apps/uiforge/frontend
+          git fetch origin
+          git reset --hard origin/main
+
+      - name: Update Backend
+        run: |
+          cd /srv/apps/uiforge/backend
+          git fetch origin
+          git reset --hard origin/main
+
+      - name: Rebuild Stack
+        run: |
+          cd /srv/infra/uiforge
+          docker compose up -d --build
+
+      - name: Cleanup
+        run: docker image prune -f
