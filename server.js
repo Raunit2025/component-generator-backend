@@ -12,15 +12,15 @@ dotenv.config();
 connectDB();
 
 const app = express();
-
+app.set("trust proxy", 1);
 // Body parser
 app.use(express.json());
 
 // --- SECURE CORS CONFIGURATION WITH LOGGING ---
 const allowedOrigins = [
-  'http://localhost:3000', // For local development
-  'https://component-generator-frontend.vercel.app',
-  'https://component-generator-frontend-nt25jq16z-raunit-rajs-projects.vercel.app' // Your known Vercel URL
+  'http://localhost:3000',
+  'https://uiforge.raunit.dpdns.org',
+  'https://component-generator-frontend.vercel.app'
 ];
 
 app.use(cors({
